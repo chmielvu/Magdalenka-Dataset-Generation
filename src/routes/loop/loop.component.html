@@ -1,0 +1,13 @@
+
+<div class="p-8">
+    <h1 class="text-3xl font-bold text-slate-100 mb-4">Agentic Loop</h1>
+    <p class="text-slate-400 max-w-2xl">This is the control center for the auto-rebalancing agent. If label imbalance exceeds a defined threshold, this system will trigger offline hybrid RAG and constrained generation jobs to create new samples for underrepresented labels. The results will be queued for QC.</p>
+    
+    <div class="mt-8 bg-slate-800 p-6 rounded-lg shadow-lg">
+        <h2 class="text-xl font-semibold mb-4 text-slate-200">Loop Status</h2>
+        <div class="flex items-center space-x-4">
+            <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+            <p class="text-slate-300">System is idle. All labels are balanced.</p>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,5 @@
+{
+  "name": "Magdalenka AI Workbench",
+  "description": "An Angular PWA that operationalizes the Magdalenka Codex Classification manifest for tactics, emotions, and cleavages. It integrates the Gemini SDK for streaming, function-calling, embeddings, and controlled grounding.",
+  "requestFramePermissions": []
+}

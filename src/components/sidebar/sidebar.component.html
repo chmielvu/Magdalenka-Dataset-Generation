@@ -1,0 +1,25 @@
+
+<aside class="w-64 flex-shrink-0 bg-slate-800 p-4 flex flex-col">
+    <div class="flex items-center mb-8">
+        <svg class="w-10 h-10 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http_//www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M12 6V3m0 18v-3M5.636 5.636l-1.414-1.414M19.778 19.778l-1.414-1.414M18.364 5.636l1.414-1.414M4.222 19.778l1.414-1.414"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+        <h1 class="text-xl font-bold ml-2 text-slate-100">Magdalenka AI</h1>
+    </div>
+    <nav class="flex-1 space-y-2">
+        @for (link of navLinks(); track link.path) {
+            <a [routerLink]="link.path" routerLinkActive="bg-indigo-600 text-white" 
+            class="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-200">
+                <svg class="w-6 h-6 mr-3" fill="currentColor" viewBox="0 0 24 24" [innerHTML]="link.icon"></svg>
+                {{ link.label }}
+            </a>
+        }
+    </nav>
+    <div class="mt-auto">
+        <div class="flex items-center p-2 bg-slate-700/50 rounded-lg">
+            <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-white">A</div>
+            <div class="ml-3">
+                <p class="text-sm font-semibold text-slate-100">Analyst User</p>
+                <p class="text-xs text-slate-400">Workspace Owner</p>
+            </div>
+        </div>
+    </div>
+</aside>

@@ -1,0 +1,135 @@
+<div class="p-8 h-full flex flex-col">
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-slate-100 mb-2">Codex-Guided Generation</h1>
+        <p class="text-slate-400 max-w-3xl">Use the power of Gemini to augment your dataset. Select a mode, provide a prompt, and generate new samples conforming to the Magdalenka Codex.</p>
+    </div>
+
+    <!-- Mode Selector -->
+    <div class="mb-4 border-b border-slate-700">
+        <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+            <button (click)="setMode('simple')" [class.border-indigo-500]="mode() === 'simple'" [class.text-indigo-400]="mode() === 'simple'" class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-slate-400 hover:text-white hover:border-slate-300">Simple</button>
+            <button (click)="setMode('orchestrator')" [class.border-indigo-500]="mode() === 'orchestrator'" [class.text-indigo-400]="mode() === 'orchestrator'" class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-slate-400 hover:text-white hover:border-slate-300">Orchestrator</button>
+            <button (click)="setMode('thinking')" [class.border-indigo-500]="mode() === 'thinking'" [class.text-indigo-400]="mode() === 'thinking'" class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-slate-400 hover:text-white hover:border-slate-300">Thinking</button>
+            <button (click)="setMode('search')" [class.border-indigo-500]="mode() === 'search'" [class.text-indigo-400]="mode() === 'search'" class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-slate-400 hover:text-white hover:border-slate-300">Search</button>
+        </nav>
+    </div>
+
+    <!-- Inputs -->
+    <div class="flex flex-col space-y-4">
+        <textarea [(ngModel)]="prompt" rows="3" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-slate-200 placeholder-slate-500" placeholder="Enter your generation prompt..."></textarea>
+        
+        <div class="flex items-center space-x-4">
+            <button (click)="generate()" [disabled]="isLoading()" class="px-6 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-slate-500 disabled:cursor-not-allowed flex items-center">
+                @if (isLoading()) {
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http_//www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Generating...
+                } @else {
+                    <span>Generate</span>
+                }
+            </button>
+             @if (mode() === 'orchestrator') {
+                <div class="flex items-center space-x-2">
+                    <label for="batchSize" class="text-sm font-medium text-slate-300">Batch Size:</label>
+                    <input type="number" id="batchSize" name="batchSize" [(ngModel)]="batchSize" min="1" max="10" class="w-20 bg-slate-800 border border-slate-700 rounded-md p-1.5 text-center focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Outputs -->
+    <div class="mt-8 flex-1 overflow-y-auto">
+        <h2 class="text-xl font-semibold text-slate-200 mb-3">Generated Output</h2>
+        
+        <!-- Simple Mode Output -->
+        @if(mode() === 'simple') {
+            <div class="p-4 bg-slate-800 rounded-lg border border-slate-700 min-h-[150px] whitespace-pre-wrap font-mono text-sm text-slate-300">
+                {{ generatedContent() }}
+                @if (!isLoading() && !generatedContent()) {
+                    <span class="text-slate-500 font-sans">Your generated sample will appear here...</span>
+                }
+            </div>
+            @if(generatedSample(); as sample) {
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-slate-800/50 p-3 rounded-lg"><h3 class="font-semibold text-indigo-400 mb-2">Tactics</h3><div class="flex flex-wrap gap-2"> @for(t of Object.keys(sample.tactics); track t){<span class="bg-slate-700 text-xs px-2 py-0.5 rounded-full">{{t}}: {{sample.tactics[t].toFixed(2)}}</span>}</div></div>
+                    <div class="bg-slate-800/50 p-3 rounded-lg"><h3 class="font-semibold text-indigo-400 mb-2">Emotions</h3><div class="flex flex-wrap gap-2">@for(e of Object.keys(sample.emotions); track e){<span class="bg-slate-700 text-xs px-2 py-0.5 rounded-full">{{e}}: {{sample.emotions[e].toFixed(2)}}</span>}</div></div>
+                    <div class="bg-slate-800/50 p-3 rounded-lg"><h3 class="font-semibold text-indigo-400 mb-2">Cleavages</h3><div class="flex flex-wrap gap-2">@for(c of Object.keys(sample.cleavages); track c){<span class="bg-slate-700 text-xs px-2 py-0.5 rounded-full">{{c}}: {{sample.cleavages[c].toFixed(2)}}</span>}</div></div>
+                </div>
+            }
+        }
+
+        <!-- Orchestrator Mode Output -->
+        @if(mode() === 'orchestrator') {
+            @if(isLoading()) {
+                <div class="p-4 bg-slate-800 rounded-lg border border-slate-700 min-h-[150px] whitespace-pre-wrap font-mono text-sm text-slate-300">{{ generatedContent() }}</div>
+            } @else if (generatedSamples().length > 0) {
+                 <div class="flex flex-col space-y-4">
+                    @for (sample of generatedSamples(); track sample.provenance.generator_id) {
+                        <div class="bg-slate-800/70 p-4 rounded-lg border border-slate-700">
+                            <p class="font-mono text-sm text-slate-200 mb-3">"{{sample.text}}"</p>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div class="p-2 rounded-md bg-slate-900/50"><h4 class="font-semibold text-indigo-400 text-xs mb-1">Tactics</h4><div class="flex flex-wrap gap-1">@for(t of Object.keys(sample.tactics); track t){<span class="bg-slate-700 text-xs px-2 py-0.5 rounded-full">{{t}}: {{sample.tactics[t].toFixed(2)}}</span>}</div></div>
+                                <div class="p-2 rounded-md bg-slate-900/50"><h4 class="font-semibold text-indigo-400 text-xs mb-1">Emotions</h4><div class="flex flex-wrap gap-1">@for(e of Object.keys(sample.emotions); track e){<span class="bg-slate-700 text-xs px-2 py-0.5 rounded-full">{{e}}: {{sample.emotions[e].toFixed(2)}}</span>}</div></div>
+                                <div class="p-2 rounded-md bg-slate-900/50"><h4 class="font-semibold text-indigo-400 text-xs mb-1">Cleavages</h4><div class="flex flex-wrap gap-1">@for(c of Object.keys(sample.cleavages); track c){<span class="bg-slate-700 text-xs px-2 py-0.5 rounded-full">{{c}}: {{sample.cleavages[c].toFixed(2)}}</span>}</div></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="mt-6">
+                    <button (click)="analyzeBatch()" [disabled]="isAnalyzing()" class="px-5 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:bg-slate-500 flex items-center">
+                        @if(isAnalyzing()){
+                             <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            Analyzing...
+                        } @else {
+                            <span>Analyze Batch with Code Execution</span>
+                        }
+                    </button>
+                    @if(analysisResult(); as result) {
+                        <div class="mt-4 p-4 bg-slate-800 rounded-lg border border-slate-700">
+                             <h3 class="text-lg font-semibold text-slate-200 mb-2">Analysis Result</h3>
+                             <div class="prose prose-invert prose-sm max-w-none whitespace-pre-wrap text-slate-300" [innerHTML]="result"></div>
+                        </div>
+                    }
+                </div>
+
+            } @else {
+                <div class="p-4 bg-slate-800 rounded-lg border border-slate-700 min-h-[150px] flex items-center justify-center">
+                    <span class="text-slate-500">Your generated batch will appear here...</span>
+                </div>
+            }
+        }
+        
+        <!-- Thinking Mode Output -->
+        @if(mode() === 'thinking') {
+             <div class="p-4 bg-slate-800 rounded-lg border border-slate-700 min-h-[150px] whitespace-pre-wrap text-slate-300">
+                {{ thinkingResult() }}
+                @if (!isLoading() && !thinkingResult()) {
+                    <span class="text-slate-500">The result from Thinking Mode will appear here...</span>
+                }
+            </div>
+        }
+
+        <!-- Search Mode Output -->
+        @if(mode() === 'search') {
+            <div class="p-4 bg-slate-800 rounded-lg border border-slate-700 min-h-[150px] whitespace-pre-wrap text-slate-300">
+                {{ searchResult().text }}
+                @if (!isLoading() && !searchResult().text) {
+                    <span class="text-slate-500">The search-grounded result will appear here...</span>
+                }
+            </div>
+            @if(searchResult().citations.length > 0) {
+                <div class="mt-4">
+                    <h3 class="font-semibold text-indigo-400 mb-2">Citations</h3>
+                    <div class="flex flex-wrap gap-2">
+                        @for(cite of searchResult().citations; track $index) {
+                            <a [href]="cite.web?.uri" target="_blank" class="bg-slate-700 text-slate-300 text-xs hover:bg-slate-600 px-2.5 py-1 rounded-full truncate">{{ cite.web?.title || cite.web?.uri }}</a>
+                        }
+                    </div>
+                </div>
+            }
+        }
+
+    </div>
+</div>
