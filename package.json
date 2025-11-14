@@ -16,9 +16,9 @@
     "@google/genai": "^1.29.0",
     "@angular/router": "^20.3.10",
     "@angular/core": "^20.3.0",
+    "@angular/common": "^20.3.0",
     "@angular/build": "^20.3.0",
     "@angular/cli": "^20.3.0",
-    "@angular/common": "^20.3.0",
     "@angular/compiler-cli": "^20.3.0",
     "tailwindcss": "latest"
   },

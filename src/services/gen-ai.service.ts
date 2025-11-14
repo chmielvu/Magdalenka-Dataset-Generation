@@ -1,7 +1,10 @@
-import { Injectable } from '@angular/core';
+
+import { Injectable, inject } from '@angular/core';
 import { GoogleGenAI, Type, GenerateContentResponse, Tool } from '@google/genai';
 import { from } from 'rxjs';
-import { Sample, GeneratedSample } from '../models/magdalenka.model';
+import { Sample, GeneratedSample, MagdalenkaCodexClassification } from '../models/magdalenka.model';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -13,6 +16,9 @@ export class GenAiService {
   // In a real application, never expose the API key on the client side.
   // The Applet environment will inject the API_KEY.
   private readonly apiKey = process.env.API_KEY;
+  private readonly http = inject(HttpClient);
+  private codex: MagdalenkaCodexClassification | null = null;
+
 
   constructor() {
     if (!this.apiKey) {
@@ -20,6 +26,17 @@ export class GenAiService {
       // In a real app, you might throw an error or handle this state gracefully
     }
     this.ai = new GoogleGenAI({ apiKey: this.apiKey || 'fallback_key' });
+    this.loadCodex();
+  }
+
+  private async loadCodex() {
+    try {
+      // In a real app, ensuring this is loaded before calls is critical.
+      // This file would be in the /assets directory.
+      this.codex = await firstValueFrom(this.http.get<MagdalenkaCodexClassification>('Magdalenka Codex Classification.json'));
+    } catch (e) {
+      console.error("Failed to load Magdalenka Codex. Annotation context will be limited.", e);
+    }
   }
 
   private readonly sampleSchema = {
@@ -90,10 +107,20 @@ export class GenAiService {
         required: ['outputs']
     };
     
+    let codexContext = "";
+    if (this.codex) {
+       codexContext = `
+       You must adhere to the Magdalenka Codex for all classifications.
+       - Available Cleavages: ${this.codex.labels.cleavages.map(c => c.id).join(', ')}
+       - Available Tactics: ${this.codex.labels.tactics.map(t => t.id).join(', ')}
+       - Available Emotions: ${this.codex.labels.emotions.map(e => e.id).join(', ')}
+       `;
+    }
+
     const systemInstruction = `You are a sophisticated Polish socio-political analyst and data generation orchestrator. Your task is to generate a batch of nuanced, authentic-sounding text examples reflecting the complex Polish information ecosystem, adhering to the Magdalenka Codex.
 - You must generate EXACTLY ${batchSize} unique samples.
 - Each sample must conform strictly to the provided JSON schema.
-- The 'labels' field is deprecated; use 'cleavages', 'tactics', and 'emotions' objects with key-value pairs for scores.
+- ${codexContext}
 - Emulate the style, tone, and complexity of real-world political discourse. Maintain high linguistic quality and doctrinal accuracy.
 - Respond ONLY with a single JSON object containing the 'outputs' key, which holds the array of generated samples. Do not include any other text, markdown, or explanations.`;
 
@@ -188,6 +215,110 @@ Perform the following analysis using the code interpreter:
     } catch (error) {
       console.error('Error during code execution analysis:', error);
       return `An error occurred during analysis: ${error instanceof Error ? error.message : String(error)}`;
+    }
+  }
+
+  /**
+   * The "Annotator Agent".
+   * Takes a batch of raw text strings and returns their Codex classifications.
+   */
+  async annotateBatch(rawSamples: {id: string, text: string}[]): Promise<GeneratedSample[]> {
+    if (!this.apiKey || rawSamples.length === 0) return [];
+    
+    if (!this.codex) await this.loadCodex();
+
+    const codexPrompt = `
+    CORE DOCTRINE (Magdalenka Codex):
+    
+    CLEAVAGES (Identify intensity 0.0-1.0):
+    ${this.codex?.labels.cleavages.map(c => `- ${c.id}: ${c.description}`).join('\n')}
+    
+    TACTICS (Identify confidence 0.0-1.0):
+    ${this.codex?.labels.tactics.map(t => `- ${t.id}: ${t.description}`).join('\n')}
+    
+    EMOTIONS (Identify primary emotion):
+    ${this.codex?.labels.emotions.map(e => `- ${e.id}: ${e.description}`).join('\n')}
+    `;
+
+    const systemInstruction = `
+    ROLE: You are the "Magdalenka Annotator Agent". Your sole purpose is to classify Polish political text according to the provided Codex.
+    
+    ${codexPrompt}
+    
+    INSTRUCTIONS:
+    1. Analyze each provided text sample.
+    2. Determine the intensity (0.0 - 1.0) of every Cleavage defined in the Codex.
+    3. Identify active Tactics and assign confidence scores.
+    4. Identify the primary Emotion Fuel and score it.
+    5. **CRITICAL**: Identify the 'stance_label' (AGAINST, FAVOR, NEUTRAL) and the specific 'stance_target' (e.g., "Tusk", "PiS", "UE", "Rolnicy").
+    6. Return a JSON object mapping the input ID to its annotation.
+    
+    STRICT OUTPUT RULES:
+    - You MUST return a JSON object.
+    - You MUST NOT add conversational text.
+    `;
+
+    const userPrompt = `Annotate this batch of ${rawSamples.length} items:\n` + 
+                       JSON.stringify(rawSamples, null, 2);
+
+    const annotationSchema = {
+      type: Type.OBJECT,
+      properties: {
+        annotations: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              ref_id: { type: Type.STRING, description: "The ID of the input sample being annotated." },
+              tactics: { type: Type.OBJECT, description: "Map of tactic_id (string) to score (number)" },
+              emotions: { type: Type.OBJECT, description: "Map of emotion_id (string) to score (number)" },
+              cleavages: { type: Type.OBJECT, description: "Map of cleavage_id (string) to score (number)" },
+              stance_label: { type: Type.STRING, enum: ["FAVOR", "AGAINST", "NEUTRAL"] },
+              stance_target: { type: Type.STRING, description: "The specific entity the stance is directed towards." }
+            },
+            required: ['ref_id', 'tactics', 'emotions', 'cleavages', 'stance_label', 'stance_target']
+          }
+        }
+      },
+      required: ['annotations']
+    };
+
+    try {
+      const result = await this.ai.models.generateContent({
+        model: 'gemini-2.5-pro',
+        contents: userPrompt,
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json',
+          responseSchema: annotationSchema
+        }
+      });
+
+      const parsed = JSON.parse(result.text);
+      
+      return parsed.annotations.map((ann: any) => {
+        const original = rawSamples.find(s => s.id === ann.ref_id);
+        
+        const sample: GeneratedSample = {
+          text: original?.text || "Error: Text lost",
+          tactics: ann.tactics || {},
+          emotions: ann.emotions || {},
+          cleavages: ann.cleavages || {},
+          kg: { nodes: [], edges: [] }, 
+          provenance: { 
+            origin: 'synthetic', 
+            generator_id: ann.ref_id,
+            // Storing stance info here to pass to QC Service
+            ai_stance_label: ann.stance_label,
+            ai_stance_target: ann.stance_target
+          } as any 
+        };
+        return sample;
+      });
+
+    } catch (e) {
+      console.error("Annotation batch failed:", e);
+      throw e;
     }
   }
 }

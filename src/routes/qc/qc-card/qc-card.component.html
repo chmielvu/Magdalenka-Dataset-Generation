@@ -1,0 +1,102 @@
+
+<div class="bg-slate-800/70 p-4 rounded-lg border border-slate-700 transition-all" [class.opacity-50]="sample().status === 'annotating'">
+  
+  @if(sample().status === 'annotating') {
+    <div class="absolute inset-0 bg-slate-800/50 flex items-center justify-center rounded-lg z-10">
+        <svg class="animate-spin h-8 w-8 text-indigo-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+    </div>
+  }
+
+  <div class="flex justify-between items-start mb-3">
+      <p class="font-mono text-sm text-slate-200 leading-relaxed pr-4">"{{ sample().text }}"</p>
+      <div class="flex space-x-2 flex-shrink-0">
+          <button (click)="onReject()" title="Reject this sample" class="px-3 py-1.5 text-xs font-semibold text-red-300 bg-red-900/50 hover:bg-red-900/80 rounded-md transition-colors">Reject</button>
+          <button (click)="onApprove()" title="Approve with current edits" class="px-3 py-1.5 text-xs font-semibold text-emerald-300 bg-emerald-900/50 hover:bg-emerald-900/80 rounded-md transition-colors">Approve</button>
+      </div>
+  </div>
+
+  @if(sample().status === 'error') {
+     <div class="bg-red-900/50 border border-red-700 text-red-300 text-xs p-2 rounded-md">
+        <strong>Annotation Error:</strong> {{ sample().errorMessage }}
+     </div>
+  }
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+      
+      <!-- Cleavages -->
+      <div class="bg-slate-900/50 p-3 rounded-md">
+          <h4 class="font-semibold text-indigo-400 text-sm mb-3">Cleavages</h4>
+          <div class="space-y-3">
+              @for (key of allCleavageKeys; track key) {
+                <div class="grid grid-cols-4 items-center gap-2">
+                    <label class="text-xs text-slate-400 col-span-1 truncate" [title]="key">{{key.replace('cleavage_', '')}}</label>
+                    <div class="col-span-3">
+                        <input type="range" min="0" max="1" step="0.05" [value]="editedCleavages()[key] || 0" (input)="updateCleavage(key, $event)" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                        <div class="flex justify-between text-xs mt-0.5">
+                           <span class="text-slate-500">AI: {{ (sample().suggested_cleavages[key] || 0).toFixed(2) }}</span>
+                           <span class="font-bold text-slate-300">{{ (editedCleavages()[key] || 0).toFixed(2) }}</span>
+                        </div>
+                    </div>
+                </div>
+              }
+          </div>
+      </div>
+
+      <!-- Tactics -->
+      <div class="bg-slate-900/50 p-3 rounded-md">
+          <h4 class="font-semibold text-indigo-400 text-sm mb-3">Tactics</h4>
+          <div class="space-y-3">
+             @for (key of allTacticKeys; track key) {
+                <div class="grid grid-cols-4 items-center gap-2">
+                    <label class="text-xs text-slate-400 col-span-1 truncate" [title]="key">{{key}}</label>
+                    <div class="col-span-3">
+                        <input type="range" min="0" max="1" step="0.05" [value]="editedTactics()[key] || 0" (input)="updateTactic(key, $event)" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                        <div class="flex justify-between text-xs mt-0.5">
+                           <span class="text-slate-500">AI: {{ (sample().suggested_tactics[key] || 0).toFixed(2) }}</span>
+                           <span class="font-bold text-slate-300">{{ (editedTactics()[key] || 0).toFixed(2) }}</span>
+                        </div>
+                    </div>
+                </div>
+              }
+          </div>
+      </div>
+      
+      <!-- Emotion & Stance -->
+      <div class="bg-slate-900/50 p-3 rounded-md space-y-4">
+          <h4 class="font-semibold text-indigo-400 text-sm">Emotion & Stance</h4>
+          
+          <div>
+              <label class="text-xs font-medium text-slate-400">Primary Emotion</label>
+              <select [(ngModel)]="editedEmotion" class="mt-1 block w-full pl-3 pr-10 py-1.5 text-base bg-slate-800 border-slate-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                  @for (key of allEmotionKeys; track key) {
+                    <option [value]="key">{{key.replace('emotion_', '')}}</option>
+                  }
+              </select>
+          </div>
+
+          <div>
+              <label class="text-xs font-medium text-slate-400">Stance Label</label>
+              <select [(ngModel)]="editedStanceLabel" class="mt-1 block w-full pl-3 pr-10 py-1.5 text-base bg-slate-800 border-slate-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                  @for (stance of possibleStances; track stance) {
+                    <option [value]="stance">{{stance}}</option>
+                  }
+              </select>
+          </div>
+
+           <div>
+              <label class="text-xs font-medium text-slate-400">Stance Target</label>
+              <div class="mt-1 relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span class="w-2.5 h-2.5 rounded-full"
+                            [class.bg-emerald-500]="editedStanceLabel() === 'FAVOR'"
+                            [class.bg-red-500]="editedStanceLabel() === 'AGAINST'"
+                            [class.bg-slate-500]="editedStanceLabel() === 'NEUTRAL'"
+                            [title]="'Stance: ' + editedStanceLabel()"></span>
+                  </div>
+                  <input type="text" [(ngModel)]="editedStanceTarget" class="block w-full bg-slate-800 border-slate-600 rounded-md shadow-sm py-1.5 pl-8 pr-3 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="e.g., PiS, Tusk, UE">
+              </div>
+          </div>
+      </div>
+
+  </div>
+</div>

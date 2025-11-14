@@ -1,12 +1,92 @@
 
-<div class="p-8">
-    <h1 class="text-3xl font-bold text-slate-100 mb-4">Quality Control & Auditing</h1>
-    <p class="text-slate-400 max-w-2xl">This section will feature a streaming audit interface. Reviewer cards will be presented for dual-review, allowing analysts to accept, edit, or reject AI-generated samples to ensure the highest data quality before final export.</p>
-    
-    <div class="mt-8 bg-slate-800 p-6 rounded-lg shadow-lg">
-        <h2 class="text-xl font-semibold mb-4 text-slate-200">Review Queue</h2>
-        <div class="border border-slate-700 rounded-lg p-4 text-center">
-            <p class="text-slate-500">No items currently in your review queue.</p>
-        </div>
+<div class="p-8 h-full flex flex-col">
+  <div class="flex justify-between items-start mb-6">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-100">Pipeline 1: AI Annotation & Review</h1>
+      <p class="text-slate-400 max-w-3xl mt-2">
+        This pipeline operationalizes the Magdalenka Codex. Upload raw text data, use the Gemini-powered "Annotator Agent" to classify it, and then perform human-in-the-loop review to ensure the highest quality labels before exporting.
+      </p>
     </div>
+    <div class="flex-shrink-0 flex items-center space-x-2">
+      <button (click)="onBulkApprove()" [disabled]="pendingCount() === 0" 
+              class="px-5 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors">
+        Bulk Approve ({{ pendingCount() }})
+      </button>
+      <button (click)="onExport()" [disabled]="approvedAnnotations().length === 0" 
+              class="px-5 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors">
+        Export {{ approvedAnnotations().length }} Approved
+      </button>
+    </div>
+  </div>
+  
+  <div class="mb-8 p-6 bg-slate-800 rounded-lg shadow-lg border border-slate-700">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+          <!-- Step 1: Upload -->
+          <div class="space-y-2">
+             <h3 class="text-sm font-semibold text-slate-300">Step 1: Ingest Raw Data</h3>
+             <p class="text-xs text-slate-400">Upload a `.jsonl` file where each line is a JSON object with a "text" or "full_text" key.</p>
+             <label class="inline-flex items-center px-4 py-2 border border-slate-600 shadow-sm text-sm font-medium rounded-md text-slate-200 bg-slate-700 hover:bg-slate-600 cursor-pointer transition-colors">
+                <svg class="w-5 h-5 mr-2 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l-3.75 3.75M12 9.75l3.75 3.75M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" />
+                </svg>
+                Upload JSONL File
+                <input type="file" class="hidden" (change)="onFileSelected($event)" accept=".jsonl,.json">
+             </label>
+          </div>
+
+          <!-- Step 2: Annotate -->
+          <div class="space-y-2">
+             <h3 class="text-sm font-semibold text-slate-300">Step 2: AI Processing</h3>
+             <p class="text-xs text-slate-400">The "Annotator Agent" will process all raw items using the Magdalenka Codex.</p>
+             <button (click)="runAnnotation()" [disabled]="rawCount() === 0 || isAnnotating()" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors">
+                @if(isAnnotating()) {
+                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Annotating...
+                } @else {
+                    <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.553L16.5 21.75l-.398-1.197a3.375 3.375 0 00-2.456-2.456L12.75 18l1.197-.398a3.375 3.375 0 002.456-2.456L16.5 14.25l.398 1.197a3.375 3.375 0 002.456 2.456L20.25 18l-1.197.398a3.375 3.375 0 00-2.456 2.456z" />
+                    </svg>
+                    Run AI Annotation ({{rawCount()}})
+                }
+             </button>
+          </div>
+
+          <!-- Step 3: Review -->
+          <div class="space-y-2">
+              <h3 class="text-sm font-semibold text-slate-300">Step 3: Human Review</h3>
+              <p class="text-xs text-slate-400">Approve, reject, or edit the AI's suggestions to create the final ground truth dataset.</p>
+              <div class="flex space-x-4 text-sm pt-2">
+                <span class="text-indigo-400">{{ pendingCount() }} pending</span>
+                <span class="text-slate-400">{{ approvedAnnotations().length }} approved</span>
+                @if(errorCount() > 0) {
+                  <span class="text-red-400">{{ errorCount() }} errors</span>
+                }
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <div class="flex-1 overflow-y-auto pr-2">
+    @if (reviewQueue().length > 0) {
+      <div class="flex flex-col space-y-6">
+        @for (sample of reviewQueue(); track sample.id) {
+          @if (sample.status === 'pending_review' || sample.status === 'annotating' || sample.status === 'error') {
+            <app-qc-card 
+                [sample]="sample" 
+                (approve)="onApprove($event)" 
+                (reject)="onReject($event)">
+            </app-qc-card>
+          }
+        }
+      </div>
+    } @else {
+      <div class="border-2 border-dashed border-slate-700 rounded-lg p-12 text-center h-full flex flex-col justify-center">
+        <svg class="mx-auto h-12 w-12 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-slate-300">The review queue is empty</h3>
+        <p class="mt-1 text-sm text-slate-500">Upload a JSONL file to get started.</p>
+      </div>
+    }
+  </div>
 </div>

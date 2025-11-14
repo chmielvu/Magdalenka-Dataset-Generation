@@ -1,3 +1,17 @@
+export interface CodexItem {
+  id: string;
+  name: string;
+  description: string;
+  examples?: string[];
+}
+
+export interface MagdalenkaCodexClassification {
+  labels: {
+    cleavages: CodexItem[];
+    tactics: CodexItem[];
+    emotions: CodexItem[];
+  }
+}
 
 export interface Sample {
   id: string;
