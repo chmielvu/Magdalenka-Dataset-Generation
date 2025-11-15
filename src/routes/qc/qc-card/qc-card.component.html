@@ -1,9 +1,10 @@
 
-<div class="bg-slate-800/70 p-4 rounded-lg border border-slate-700 transition-all" [class.opacity-50]="sample().status === 'annotating'">
+<div class="bg-slate-800/70 p-4 rounded-lg border border-slate-700 transition-all relative" [class.opacity-50]="sample().status === 'annotating'">
   
   @if(sample().status === 'annotating') {
-    <div class="absolute inset-0 bg-slate-800/50 flex items-center justify-center rounded-lg z-10">
+    <div class="absolute inset-0 bg-slate-800/50 flex flex-col items-center justify-center rounded-lg z-10">
         <svg class="animate-spin h-8 w-8 text-indigo-400" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        <span class="text-indigo-300 text-sm font-medium mt-2">Annotating...</span>
     </div>
   }
 
@@ -16,24 +17,23 @@
   </div>
 
   @if(sample().status === 'error') {
-     <div class="bg-red-900/50 border border-red-700 text-red-300 text-xs p-2 rounded-md">
+     <div class="bg-red-900/50 border border-red-700 text-red-300 text-xs p-2 rounded-md my-2">
         <strong>Annotation Error:</strong> {{ sample().errorMessage }}
      </div>
   }
 
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
       
-      <!-- Cleavages -->
       <div class="bg-slate-900/50 p-3 rounded-md">
           <h4 class="font-semibold text-indigo-400 text-sm mb-3">Cleavages</h4>
           <div class="space-y-3">
-              @for (key of allCleavageKeys; track key) {
+              @for (key of cleavageKeys; track key) {
                 <div class="grid grid-cols-4 items-center gap-2">
                     <label class="text-xs text-slate-400 col-span-1 truncate" [title]="key">{{key.replace('cleavage_', '')}}</label>
                     <div class="col-span-3">
-                        <input type="range" min="0" max="1" step="0.05" [value]="editedCleavages()[key] || 0" (input)="updateCleavage(key, $event)" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                        <input type="range" min="0" max="1" step="0.05" [value]="editedCleavages()[key] || 0" (input)="updateCleavage(key, $event)" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer range-thumb-indigo">
                         <div class="flex justify-between text-xs mt-0.5">
-                           <span class="text-slate-500">AI: {{ (sample().suggested_cleavages[key] || 0).toFixed(2) }}</span>
+                           <span class="text-slate-500" title="AI Suggestion">AI: {{ (sample().suggested_cleavages[key] || 0).toFixed(2) }}</span>
                            <span class="font-bold text-slate-300">{{ (editedCleavages()[key] || 0).toFixed(2) }}</span>
                         </div>
                     </div>
@@ -42,26 +42,24 @@
           </div>
       </div>
 
-      <!-- Tactics -->
       <div class="bg-slate-900/50 p-3 rounded-md">
           <h4 class="font-semibold text-indigo-400 text-sm mb-3">Tactics</h4>
           <div class="space-y-3">
              @for (key of allTacticKeys; track key) {
                 <div class="grid grid-cols-4 items-center gap-2">
-                    <label class="text-xs text-slate-400 col-span-1 truncate" [title]="key">{{key}}</label>
+                    <label class="text-xs text-slate-400 col-span-1 truncate" [title]="key">{{key.replace('tactic_', '')}}</label>
                     <div class="col-span-3">
-                        <input type="range" min="0" max="1" step="0.05" [value]="editedTactics()[key] || 0" (input)="updateTactic(key, $event)" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                        <input type="range" min="0" max="1" step="0.05" [value]="editedTactics()[key] || 0" (input)="updateTactic(key, $event)" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer range-thumb-indigo">
                         <div class="flex justify-between text-xs mt-0.5">
-                           <span class="text-slate-500">AI: {{ (sample().suggested_tactics[key] || 0).toFixed(2) }}</span>
+                           <span class="text-slate-500" title="AI Suggestion">AI: {{ (sample().suggested_tactics[key] || 0).toFixed(2) }}</span>
                            <span class="font-bold text-slate-300">{{ (editedTactics()[key] || 0).toFixed(2) }}</span>
                         </div>
                     </div>
                 </div>
               }
-          </div>
+              </div>
       </div>
       
-      <!-- Emotion & Stance -->
       <div class="bg-slate-900/50 p-3 rounded-md space-y-4">
           <h4 class="font-semibold text-indigo-400 text-sm">Emotion & Stance</h4>
           

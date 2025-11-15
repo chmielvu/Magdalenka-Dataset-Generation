@@ -6,6 +6,7 @@ import { QcSample } from '../../../services/qc.service';
 
 @Component({
   selector: 'app-qc-card',
+  standalone: true,
   templateUrl: './qc-card.component.html',
   imports: [CommonModule, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -24,10 +25,20 @@ export class QcCardComponent {
   editedStanceTarget = signal<string>('');
 
   readonly possibleStances = ['FAVOR', 'AGAINST', 'NEUTRAL'];
+  
+  // Expose cleavage keys from the service definition for a stable UI
+  readonly cleavageKeys = [
+    "cleavage_post_peasant",
+    "cleavage_economic_anxiety",
+    "cleavage_sovereigntist",
+    "cleavage_generational",
+    "cleavage_trauma"
+  ];
 
   constructor() {
     effect(() => {
       const s = this.sample();
+      // Initialize edited state from the sample's "reviewed" fields
       this.editedCleavages.set({ ...s.reviewed_cleavages });
       this.editedTactics.set({ ...s.reviewed_tactics });
       this.editedEmotion.set(s.reviewed_emotion);
@@ -36,10 +47,8 @@ export class QcCardComponent {
     }, { allowSignalWrites: true });
   }
 
-  get allCleavageKeys(): string[] {
-    return [...new Set([...Object.keys(this.sample().suggested_cleavages), ...Object.keys(this.editedCleavages())])].sort();
-  }
   get allTacticKeys(): string[] {
+    // Combine suggested keys and already edited keys for the UI
     return [...new Set([...Object.keys(this.sample().suggested_tactics), ...Object.keys(this.editedTactics())])].sort();
   }
   get allEmotionKeys(): string[] {
@@ -47,6 +56,8 @@ export class QcCardComponent {
     if(this.sample().reviewed_emotion) {
       keys.add(this.sample().reviewed_emotion);
     }
+    // Add a "NEUTRAL" fallback
+    if (keys.size === 0) keys.add('NEUTRAL');
     return Array.from(keys).sort();
   }
 
@@ -64,7 +75,9 @@ export class QcCardComponent {
   }
 
   onReject() {
-    this.reject.emit(this.sample().id);
+    if (window.confirm('Are you sure you want to reject and discard this sample?')) {
+        this.reject.emit(this.sample().id);
+    }
   }
 
   updateCleavage(key: string, event: Event) {

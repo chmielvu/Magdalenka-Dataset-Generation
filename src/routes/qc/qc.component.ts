@@ -7,6 +7,7 @@ import { QcCardComponent } from './qc-card/qc-card.component';
 
 @Component({
   selector: 'app-qc',
+  standalone: true,
   templateUrl: './qc.component.html',
   imports: [FormsModule, CommonModule, QcCardComponent], 
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,7 +42,9 @@ export class QcComponent {
   }
 
   onBulkApprove() {
-    this.qcService.bulkApprovePending();
+    if (window.confirm(`Are you sure you want to bulk-approve all ${this.pendingCount()} pending items without review?`)) {
+        this.qcService.bulkApprovePending();
+    }
   }
 
   onReject(sampleId: string) {

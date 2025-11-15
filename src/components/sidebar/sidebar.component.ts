@@ -1,6 +1,7 @@
 
 import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { CommonModule } from '@angular/common';
 
 interface NavLink {
   path: string;
@@ -11,7 +12,8 @@ interface NavLink {
 @Component({
   selector: 'app-sidebar',
   templateUrl: './sidebar.component.html',
-  imports: [RouterLink, RouterLinkActive],
+  standalone: true,
+  imports: [CommonModule, RouterLink, RouterLinkActive],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SidebarComponent {

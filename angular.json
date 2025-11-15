@@ -1,3 +1,4 @@
+
 {
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
@@ -17,7 +18,19 @@
               "browser": "."
             },
             "browser": "index.tsx",
-            "tsConfig": "tsconfig.json"
+            "tsConfig": "tsconfig.json",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "public",
+                "output": "/"
+              },
+              {
+                "glob": "Magdalenka Codex Classification.json",
+                "input": "/",
+                "output": "/assets/"
+              }
+            ]
           },
           "configurations": {
             "production": {
@@ -34,7 +47,8 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
-            "port": 3000
+            "port": 3000,
+            "buildTarget": "app:build:development"
           },
           "configurations": {
             "production": {

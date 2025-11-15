@@ -1,6 +1,6 @@
 
 import { Injectable, inject } from '@angular/core';
-import { GoogleGenAI, Type, GenerateContentResponse, Tool } from '@google/genai';
+import { GoogleGenAI, Type, GenerateContentResponse, Tool } from '@google/ai';
 import { from } from 'rxjs';
 import { Sample, GeneratedSample, MagdalenkaCodexClassification } from '../models/magdalenka.model';
 import { HttpClient } from '@angular/common/http';
@@ -32,8 +32,8 @@ export class GenAiService {
   private async loadCodex() {
     try {
       // In a real app, ensuring this is loaded before calls is critical.
-      // This file would be in the /assets directory.
-      this.codex = await firstValueFrom(this.http.get<MagdalenkaCodexClassification>('Magdalenka Codex Classification.json'));
+      // FIXED: Path now correctly points to the assets directory.
+      this.codex = await firstValueFrom(this.http.get<MagdalenkaCodexClassification>('assets/Magdalenka Codex Classification.json'));
     } catch (e) {
       console.error("Failed to load Magdalenka Codex. Annotation context will be limited.", e);
     }
